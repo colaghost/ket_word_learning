@@ -930,6 +930,7 @@
                 this.words = this.shuffleArray([...words]);
                 this.currentQuestion = 0;
                 this.correctCount = 0;
+                this.wrongCount = 0;
                 this.currentQuestionData = null;
             }
 
@@ -978,6 +979,13 @@
                     }
                     return { status: 'correct' };
                 } else {
+                    this.wrongCount++;
+                    this.currentQuestion++;
+                    this.currentQuestionData = null;
+
+                    if (this.currentQuestion >= this.words.length) {
+                        return { status: 'complete', score: this.correctCount };
+                    }
                     return { status: 'wrong', correct: question.correctAnswer, word: question.word };
                 }
             }
@@ -1048,7 +1056,7 @@
                     <div>❌ 答错了！</div>
                     <div style="margin-top:10px;">正确答案：${result.correct}</div>
                     <div style="margin-top:10px;">${result.word['单词']} - ${result.word['中文含义']}</div>
-                    <button class="retry-btn" onclick="retryQuestion()" style="margin-top:15px;padding:10px 30px;background:#0099CC;color:white;border:none;border-radius:20px;cursor:pointer;font-size:16px;">重新回答</button>
+                    <button class="next-btn" onclick="nextQuestion()" style="margin-top:15px;padding:10px 30px;background:#0099CC;color:white;border:none;border-radius:20px;cursor:pointer;font-size:16px;">继续</button>
                 `;
                 feedback.classList.remove('hidden');
             } else if (result.status === 'complete') {
@@ -1056,55 +1064,49 @@
             }
         }
 
-        function retryQuestion() {
+        function nextQuestion() {
             const feedback = document.getElementById('feedback');
-            const optionsContainer = document.getElementById('quizOptions');
-
-            const question = quizGame.currentQuestionData;
-            if (!question) {
-                renderQuizQuestion();
-                return;
-            }
-
-            document.getElementById('quizQuestion').textContent = question.question;
-            document.getElementById('feedback').classList.add('hidden');
-
-            optionsContainer.innerHTML = '';
-            question.options.forEach(option => {
-                const btn = document.createElement('button');
-                btn.className = 'quiz-option';
-                btn.textContent = option;
-                btn.onclick = () => handleQuizAnswer(option);
-                optionsContainer.appendChild(btn);
-            });
+            feedback.classList.add('hidden');
+            renderQuizQuestion();
         }
 
         function showCompletion() {
             document.getElementById('quizPage').classList.add('hidden');
             document.getElementById('completionPage').classList.remove('hidden');
 
-            // Update user data
-            if (!userData.completedLevels.includes(currentLevelId)) {
-                userData.completedLevels.push(currentLevelId);
-                unlockNextLevel(currentLevelId);
-                saveUserData();
-            }
-
             const score = quizGame.correctCount;
+            const wrong = quizGame.wrongCount;
             const total = quizGame.words.length;
             const bonus = Math.floor((score / total) * 50);
 
-            document.getElementById('completionMessage').textContent =
-                `答对 ${score}/${total} 题，获得 ${bonus} 积分！`;
+            // Award points based on score
+            userData.points += bonus;
 
-            createFireworks();
+            // Update user data
+            if (!userData.completedLevels.includes(currentLevelId)) {
+                userData.completedLevels.push(currentLevelId);
+
+                // Only unlock next level if all answers are correct
+                if (score === total) {
+                    unlockNextLevel(currentLevelId);
+                }
+                saveUserData();
+            }
+
+            document.getElementById('completionMessage').textContent =
+                `答对 ${score}/${total} 题，答错 ${wrong}/${total} 题，获得 ${bonus} 积分！`;
+
+            // Only show fireworks if all correct
+            if (score === total) {
+                createFireworks();
+            }
         }
 
         function unlockNextLevel(levelId) {
             const levelInfo = levelIdMap[levelId];
             if (!levelInfo) return;
 
-            const unitSource = levelInfo.unit;
+            const unitSource = `${levelInfo.unit}-${levelInfo.source}`;
             const currentIndex = levelInfo.index;
 
             const data = levelData[unitSource];

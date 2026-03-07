@@ -1,0 +1,8 @@
+node_modules
+package-lock.json
+package.json
+test*
+playwright-report
+*.md
+*.sh
+clear-storage.html
