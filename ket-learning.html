@@ -694,6 +694,13 @@
         // Initialize
         function init() {
             loadUserData();
+
+            // Data migration: ensure unit1-wordlist-1 is unlocked
+            if (!userData.unlockedLevels.includes("unit1-wordlist-1")) {
+                userData.unlockedLevels.push("unit1-wordlist-1");
+                saveUserData();
+            }
+
             updateStats();
             renderUnits();
             setupCheckIn();
@@ -1106,21 +1113,32 @@
             const levelInfo = levelIdMap[levelId];
             if (!levelInfo) return;
 
-            const unitSource = `${levelInfo.unit}-${levelInfo.source}`;
-            const currentIndex = levelInfo.index;
+            const { unit, source, index, total_levels } = levelInfo;
+            const unitSource = `${unit}-${source}`;
 
-            const data = levelData[unitSource];
-            if (data && data.levels) {
-                const totalLevels = data.levels.length;
-                if (currentIndex < totalLevels) {
-                    const nextLevelId = `${unitSource}-${currentIndex + 1}`;
+            // 1. Unlock next level within the same unit
+            if (index < total_levels) {
+                const nextLevelId = `${unitSource}-${index + 1}`;
+                if (!userData.unlockedLevels.includes(nextLevelId)) {
+                    userData.unlockedLevels.push(nextLevelId);
+                }
+            }
+
+            // 2. If this is the last level of current unit, unlock first level of next unit
+            if (index === total_levels) {
+                const nextUnitNumber = parseInt(unit.replace('unit', '')) + 1;
+                const nextUnit = `unit${nextUnitNumber}`;
+                const nextLevelId = `${nextUnit}-${source}-1`;
+
+                // Check if the next unit exists
+                if (levelData[`${nextUnit}-${source}`]) {
                     if (!userData.unlockedLevels.includes(nextLevelId)) {
                         userData.unlockedLevels.push(nextLevelId);
                     }
                 }
             }
 
-            // Award points
+            // Award bonus points
             const bonus = 20;
             userData.points += bonus;
         }
