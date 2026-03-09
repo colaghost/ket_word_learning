@@ -355,3 +355,11 @@ userData = {
 - `scheduleDailyReminder()` - 安排每日提醒
 - `scheduleReviewReminder(word, reviewDate)` - 安排复习提醒
 - `showReminderSettings()` - 显示提醒设置页面
+
+## LESSONS_LEARNED.md
+- 经验教训总结、问题的解决方法等的存放文件 
+
+## Code Modification rules
+- NO sed for code edits: 禁止使用 sed 或复杂的正则 shell 命令修改源代码。这会导致意外的全局替换。
+- Prefer str_replace or Full Write: 修改代码时，必须使用完整的代码块替换，或读取文件后重新写入，以确保语法正确。
+- Scope Sensitivity: 所有的修改必须限制在函数/类定义的范围内，禁止跨行正则匹配。

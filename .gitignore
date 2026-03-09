@@ -6,3 +6,4 @@ playwright-report
 *.md
 *.sh
 clear-storage.html
+.DS_Store
