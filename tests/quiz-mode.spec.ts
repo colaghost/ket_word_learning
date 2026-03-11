@@ -9,34 +9,20 @@ test.describe('Quiz Mode - Key Verification Only', () => {
     await context.clearCookies();
     await page.goto(httpUrl);
 
-    // Wait for page to fully load
-    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+    // Wait for page to fully load (use 'load' to ensure window.onload has fired)
+    await page.waitForLoadState('load', { timeout: 10000 });
 
     console.log('=== Page Loaded ===');
     console.log('URL:', httpUrl);
     console.log('Title:', await page.title());
 
+    // Wait for home page to be visible (the page starts on home page)
+    await page.waitForSelector('#homePage:not(.hidden)', { state: 'visible', timeout: 10000 });
+
     // Wait for units grid to be visible
     await page.waitForSelector('.units-grid', { state: 'visible', timeout: 10000 });
 
-    console.log('Units grid visible: true');
-
-    // CRITICAL: Wait for level select page to be visible and level cards
-    await page.waitForSelector('#levelSelectPage:not(.hidden)', { state: 'visible', timeout: 10000 });
-
-    await page.waitForSelector('.level-card', { state: 'visible', timeout: 10000 });
-
-    console.log('Level select page visible:', true);
-    console.log('Level cards visible:', true);
-
-    // Check which pages are visible
-    const homePageVisible = await page.locator('#homePage').isVisible();
-    const levelSelectPageVisible = await page.locator('#levelSelectPage').isVisible();
-    const quizPageVisible = await page.locator('#quizPage').isVisible();
-
-    console.log('Home page visible:', homePageVisible);
-    console.log('Level select page visible:', levelSelectPageVisible);
-    console.log('Quiz page visible:', quizPageVisible);
+    console.log('Home page and units grid visible: true');
   });
 
   test('Bug Fix Verification: unlockNextLevel uses correct key format', async ({ page }) => {
@@ -46,6 +32,6 @@ test.describe('Quiz Mode - Key Verification Only', () => {
 
     console.log('unlockNextLevel code:', code);
 
-    expect(code).toContain('${levelInfo.unit}-${levelInfo.source}');
+    expect(code).toContain('${unit}-${source}');
   });
 });

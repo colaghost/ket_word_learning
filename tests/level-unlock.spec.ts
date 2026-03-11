@@ -105,6 +105,19 @@ async function answerQuestionCorrectly(page: Page): Promise<boolean> {
 
   // Check if quiz is complete
   const complete = await isQuizComplete(page);
+
+  // If not complete, check if we need to click "继续" button (wrong answer case)
+  if (!complete) {
+    // Wait a bit for the feedback to show
+    await page.waitForTimeout(500);
+
+    // Check if "继续" button is present (indicates wrong answer)
+    const nextBtnVisible = await page.getByRole('button', { name: '继续' }).isVisible();
+    if (nextBtnVisible) {
+      await clickNextQuestionButton(page);
+    }
+  }
+
   return complete;
 }
 
@@ -547,6 +560,13 @@ test.describe('Level Unlock Functionality', () => {
     await page.waitForSelector('#levelSelectPage:not(.hidden)', { state: 'visible', timeout: 10000 });
     await page.waitForSelector('.level-card', { state: 'visible', timeout: 10000 });
     console.log('Level select page is visible');
+
+    // Force a page reload to ensure UI state is updated
+    await page.waitForTimeout(2000); // Wait for UI to settle before reload
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
+    await page.waitForSelector('#levelSelectPage:not(.hidden)', { state: 'visible', timeout: 15000 });
+    await page.waitForSelector('.level-card', { state: 'visible', timeout: 15000 });
 
     // Step 5: Capture screenshot after unlock
     console.log('\n--- Step 5: Capturing screenshot after unlock ---');

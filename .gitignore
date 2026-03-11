@@ -3,7 +3,6 @@ package-lock.json
 package.json
 test-results
 playwright-report
-*.md
 *.sh
 clear-storage.html
 .DS_Store
