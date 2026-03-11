@@ -690,16 +690,22 @@
             document.getElementById('streak').textContent = userData.streak;
         }
 
-        // Helper functions for date handling
+        // Helper functions for date handling (using local timezone)
         function getTodayString() {
             const today = new Date();
-            return today.toISOString().split('T')[0];
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         }
 
         function getYesterdayString() {
             const yesterday = new Date();
-            yesterday.setTime(yesterday.getTime() - 86400000);
-            return yesterday.toISOString().split('T')[0];
+            yesterday.setDate(yesterday.getDate() - 1);
+            const year = yesterday.getFullYear();
+            const month = String(yesterday.getMonth() + 1).padStart(2, '0');
+            const day = String(yesterday.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         }
 
         // Auto-checkin function triggered by quiz completion
