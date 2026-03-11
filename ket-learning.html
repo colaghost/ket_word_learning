@@ -117,35 +117,6 @@
             color: #0099CC;
         }
 
-        /* Check-in Button */
-        .checkin-container {
-            text-align: center;
-            margin: 20px 0;
-        }
-
-        .checkin-btn {
-            background: linear-gradient(135deg, #FF6B6B 0%, #FF8888 100%);
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            font-size: 18px;
-            border-radius: 30px;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
-            transition: all 0.3s ease;
-            font-weight: bold;
-        }
-
-        .checkin-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.5);
-        }
-
-        .checkin-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-        }
 
         /* Unit Cards */
         .units-grid {
@@ -607,10 +578,6 @@
             </div>
         </div>
 
-        <!-- Check-in Button -->
-        <div class="checkin-container">
-            <button class="checkin-btn" id="checkinBtn">📅 今日打卡 +50积分</button>
-        </div>
 
         <!-- Home Page: Unit List -->
         <div id="homePage">
@@ -703,7 +670,6 @@
 
             updateStats();
             renderUnits();
-            setupCheckIn();
         }
 
         // LocalStorage
@@ -724,13 +690,7 @@
             document.getElementById('streak').textContent = userData.streak;
         }
 
-        // Check In
-        function setupCheckIn() {
-            const btn = document.getElementById('checkinBtn');
-            btn.addEventListener('click', dailyCheckIn);
-            updateCheckInButton();
-        }
-
+        // Helper functions for date handling
         function getTodayString() {
             const today = new Date();
             return today.toISOString().split('T')[0];
@@ -738,52 +698,65 @@
 
         function getYesterdayString() {
             const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
+            yesterday.setTime(yesterday.getTime() - 86400000);
             return yesterday.toISOString().split('T')[0];
         }
 
-        function updateCheckInButton() {
-            const btn = document.getElementById('checkinBtn');
-            const today = getTodayString();
-            if (userData.lastCheckIn === today) {
-                btn.disabled = true;
-                btn.textContent = '✅ 今日已打卡';
-            } else {
-                btn.disabled = false;
-                btn.textContent = '📅 今日打卡 +50积分';
-            }
-        }
-
-        function dailyCheckIn() {
+        // Auto-checkin function triggered by quiz completion
+        function autoCheckIn(score, total) {
             const today = getTodayString();
 
+            // Check if already checked in today
             if (userData.lastCheckIn === today) {
-                showToast('今日已打卡！');
-                return;
+                showToast('今日已完成测验打卡，无需重复打卡');
+                return; // Already checked in today
             }
 
+            // Check if 80% accuracy threshold is met
+            const accuracy = score / total;
+            if (accuracy < 0.8) {
+                showToast(`测验正确率 ${(accuracy * 100).toFixed(0)}%，未达到80%打卡标准`);
+                return; // Below 80% accuracy
+            }
+
+            // Streak calculation
             const yesterday = getYesterdayString();
             if (userData.lastCheckIn === yesterday) {
-                userData.streak++;
+                userData.streak++;  // Consecutive days
             } else if (userData.lastCheckIn) {
-                // Streak broken
-                userData.points = Math.max(0, userData.points - 50);
+                // Streak broken: deduct 50 points, restart streak
+                const penalty = 50;
+                userData.points = Math.max(0, userData.points - penalty);
                 userData.streak = 1;
+                showToast(`连续签到中断，扣除${penalty}积分，重新开始连续签到`);
             } else {
+                // First time check-in
                 userData.streak = 1;
             }
 
-            const baseReward = 50;
-            const streakBonus = Math.floor(userData.streak / 7) * 20;
-            userData.points += baseReward + streakBonus;
+            // Calculate points
+            const baseReward = 50;                    // Base reward
+            const streakBonus = Math.floor(userData.streak / 7) * 20;  // 20 points for every 7 consecutive days
+            const totalReward = baseReward + streakBonus;
+            userData.points += totalReward;
 
+            // Save data
             userData.lastCheckIn = today;
             saveUserData();
-            updateCheckInButton();
 
-            showToast(`打卡成功！+${baseReward}积分 (连续${userData.streak}天)`);
+            // Show success message
+            const message = streakBonus > 0
+                ? `自动打卡成功！+${baseReward}积分 (连续${userData.streak}天，额外奖励${streakBonus}分)`
+                : `自动打卡成功！+${baseReward}积分 (连续${userData.streak}天)`;
+            showToast(message);
         }
 
+        // Check In
+        
+        
+        
+        
+        
         // Render Units
         function renderUnits() {
             const grid = document.getElementById('unitsGrid');
@@ -1084,12 +1057,20 @@
             const score = quizGame.correctCount;
             const wrong = quizGame.wrongCount;
             const total = quizGame.words.length;
-            const bonus = Math.floor((score / total) * 50);
 
-            // Award points based on score
-            userData.points += bonus;
+            // Auto-checkin if accuracy >= 80%
+            // This will award check-in bonus points (50 + streak bonus)
+            autoCheckIn(score, total);
 
-            // Update user data
+            // Only award quiz bonus points if accuracy >= 80%
+            const accuracy = score / total;
+            let bonus = 0;
+            if (accuracy >= 0.8) {
+                bonus = Math.floor((score / total) * 50);
+                userData.points += bonus;
+            }
+
+            // Update completed levels (only for first completion)
             if (!userData.completedLevels.includes(currentLevelId)) {
                 userData.completedLevels.push(currentLevelId);
 
@@ -1097,8 +1078,10 @@
                 if (score === total) {
                     unlockNextLevel(currentLevelId);
                 }
-                saveUserData();
             }
+
+            // Always save after any point changes
+            saveUserData();
 
             document.getElementById('completionMessage').textContent =
                 `答对 ${score}/${total} 题，答错 ${wrong}/${total} 题，获得 ${bonus} 积分！`;
