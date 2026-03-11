@@ -766,7 +766,7 @@
             }
 
             // Calculate points
-            const baseReward = 50;                    // Base reward
+            const baseReward = 20;                    // Base reward
             const streakBonus = Math.floor(userData.streak / 7) * 20;  // 20 points for every 7 consecutive days
             const totalReward = baseReward + streakBonus;
             userData.points += totalReward;
@@ -1094,11 +1094,10 @@
             // This will award check-in bonus points (50 + streak bonus)
             autoCheckIn(score, total);
 
-            // Only award quiz bonus points if accuracy >= 80%
-            const accuracy = score / total;
+            // Award bonus points only for perfect score (all correct)
             let bonus = 0;
-            if (accuracy >= 0.8) {
-                bonus = Math.floor((score / total) * 50);
+            if (score === total) {
+                bonus = 50;
                 userData.points += bonus;
             }
 
@@ -1152,10 +1151,6 @@
                     }
                 }
             }
-
-            // Award bonus points
-            const bonus = 20;
-            userData.points += bonus;
         }
 
         // Speech
