@@ -565,6 +565,76 @@
                 font-size: 24px;
             }
         }
+
+        /* Progress bar styles */
+        .unit-progress {
+            margin: 15px 0;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+
+        .progress-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .progress-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .progress-label {
+            width: 40px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #666;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 12px;
+            background: #ddd;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0099CC, #00BBDD);
+            border-radius: 6px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            width: 55px;
+            font-size: 12px;
+            color: #666;
+            text-align: right;
+        }
+
+        /* Recommended level highlight styles */
+        .level-card.recommended {
+            border: 3px solid #FFD700;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .recommended-badge {
+            background: #FFD700;
+            color: #333;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 15px rgba(255, 215, 0, 0.5); }
+            50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.8); }
+        }
     </style>
 </head>
 <body>
@@ -783,11 +853,30 @@
         }
 
         // Check In
-        
-        
-        
-        
-        
+
+        // Get progress info for a source (pretest/wordlist)
+        function getSourceProgress(unitSource) {
+            const data = levelData[unitSource];
+            if (!data || !data.levels) return { completed: 0, total: 0, nextLevel: null };
+
+            let completed = 0;
+            let nextLevel = null;
+
+            data.levels.forEach(level => {
+                if (userData.completedLevels.includes(level.id)) {
+                    completed++;
+                } else if (!nextLevel && userData.unlockedLevels.includes(level.id)) {
+                    nextLevel = level;  // First unlocked but not completed level
+                }
+            });
+
+            return {
+                completed,
+                total: data.levels.length,
+                nextLevel
+            };
+        }
+
         // Render Units
         function renderUnits() {
             const grid = document.getElementById('unitsGrid');
@@ -804,11 +893,30 @@
             const sortedUnits = Array.from(units).sort((a, b) => a - b);
 
             sortedUnits.forEach(unitNum => {
+                const pretestProgress = getSourceProgress(`unit${unitNum}-pretest`);
+                const wordlistProgress = getSourceProgress(`unit${unitNum}-wordlist`);
+                const pretestDone = pretestProgress.completed === pretestProgress.total;
+                const wordlistDone = wordlistProgress.completed === wordlistProgress.total;
+                const pretestPercent = pretestProgress.total > 0 ? (pretestProgress.completed / pretestProgress.total) * 100 : 0;
+                const wordlistPercent = wordlistProgress.total > 0 ? (wordlistProgress.completed / wordlistProgress.total) * 100 : 0;
+
                 const card = document.createElement('div');
                 card.className = 'unit-card';
                 card.innerHTML = `
                     <div class="unit-title">Unit ${unitNum}</div>
                     <div class="unit-subtitle">${unitNames[unitNum] || ''}</div>
+                    <div class="unit-progress">
+                        <div class="progress-row">
+                            <span class="progress-label">前测</span>
+                            <div class="progress-bar"><div class="progress-fill" style="width: ${pretestPercent}%"></div></div>
+                            <span class="progress-text">${pretestProgress.completed}/${pretestProgress.total} ${pretestDone ? '✅' : ''}</span>
+                        </div>
+                        <div class="progress-row">
+                            <span class="progress-label">词汇</span>
+                            <div class="progress-bar"><div class="progress-fill" style="width: ${wordlistPercent}%"></div></div>
+                            <span class="progress-text">${wordlistProgress.completed}/${wordlistProgress.total} ${wordlistDone ? '✅' : ''}</span>
+                        </div>
+                    </div>
                     <div class="unit-buttons">
                         <button class="unit-btn pretest-btn" onclick="selectSource('unit${unitNum}-pretest', '前测')">前测</button>
                         <button class="unit-btn wordlist-btn" onclick="selectSource('unit${unitNum}-wordlist', '词汇表')">词汇表</button>
@@ -839,12 +947,35 @@
                 return;
             }
 
+            // Calculate progress and find recommended level
+            let completedCount = 0;
+            let recommendedLevelId = null;
+
+            data.levels.forEach(level => {
+                if (userData.completedLevels.includes(level.id)) {
+                    completedCount++;
+                } else if (!recommendedLevelId && userData.unlockedLevels.includes(level.id)) {
+                    recommendedLevelId = level.id;
+                }
+            });
+
+            // Update title with progress info
+            const titleEl = document.getElementById('levelSelectTitle');
+            const currentTitle = titleEl.textContent;
+            titleEl.innerHTML = `${currentTitle} <span style="font-size:14px;color:#666;font-weight:normal;">(进度: ${completedCount}/${data.levels.length})</span>`;
+
             data.levels.forEach((level, index) => {
                 const isUnlocked = userData.unlockedLevels.includes(level.id);
                 const isCompleted = userData.completedLevels.includes(level.id);
+                const isRecommended = level.id === recommendedLevelId;
 
                 const card = document.createElement('div');
                 card.className = `level-card ${isCompleted ? 'completed' : (isUnlocked ? 'unlocked' : 'locked')}`;
+
+                // Add recommended highlight class
+                if (isRecommended) {
+                    card.classList.add('recommended');
+                }
 
                 let statusText = '🔒 未解锁';
                 if (isCompleted) statusText = '✅ 已完成';
