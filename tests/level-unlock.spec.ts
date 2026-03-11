@@ -561,12 +561,8 @@ test.describe('Level Unlock Functionality', () => {
     await page.waitForSelector('.level-card', { state: 'visible', timeout: 10000 });
     console.log('Level select page is visible');
 
-    // Force a page reload to ensure UI state is updated
-    await page.waitForTimeout(2000); // Wait for UI to settle before reload
-    await page.reload();
-    await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
-    await page.waitForSelector('#levelSelectPage:not(.hidden)', { state: 'visible', timeout: 15000 });
-    await page.waitForSelector('.level-card', { state: 'visible', timeout: 15000 });
+    // Wait for UI to fully render after returning to level select page
+    await page.waitForTimeout(500);
 
     // Step 5: Capture screenshot after unlock
     console.log('\n--- Step 5: Capturing screenshot after unlock ---');
@@ -939,7 +935,15 @@ test.describe('Level Unlock Functionality', () => {
 
     // Step 7: Verify no error occurred and points increased
     const completionMessage = await page.locator('#completionMessage').textContent();
+    console.log('Completion message:', completionMessage);
     expect(completionMessage).toContain('答对');
+
+    // Get full userData for debugging
+    const userDataAfter = await page.evaluate(() => {
+      const saved = localStorage.getItem('ketUserData');
+      return saved ? JSON.parse(saved) : null;
+    });
+    console.log('User data after completion:', JSON.stringify(userDataAfter, null, 2));
 
     const unlockedLevels = await getUnlockedLevels(page);
     console.log('Unlocked levels after boundary test:', unlockedLevels);
