@@ -4,5 +4,6 @@ package.json
 test-results
 playwright-report
 *.sh
+!.claude/hooks/*.sh
 clear-storage.html
 .DS_Store
