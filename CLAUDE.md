@@ -261,3 +261,13 @@ userData = {
 - NO sed for code edits: 禁止使用 sed 或复杂的正则 shell 命令修改源代码。这会导致意外的全局替换。
 - Prefer str_replace or Full Write: 修改代码时，必须使用完整的代码块替换，或读取文件后重新写入，以确保语法正确。
 - Scope Sensitivity: 所有的修改必须限制在函数/类定义的范围内，禁止跨行正则匹配。
+
+## ALWAYS
+- Show diff before committing
+
+## Compact Instructions
+Preserve:
+1. Architecture decisions (NEVER summarize)
+2. Modified files and key changes
+3. Current verification status (pass/fail commands)
+4. Open risks, TODOs, rollback notes

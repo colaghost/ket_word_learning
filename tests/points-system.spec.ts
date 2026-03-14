@@ -1,6 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
 
-import { test } from '@playwright/test';
 const httpUrl = 'http://localhost:8080/ket-learning.html';
 
 /**

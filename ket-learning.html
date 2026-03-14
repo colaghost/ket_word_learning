@@ -763,8 +763,26 @@
                 saveUserData();
             }
 
+            // Data consistency check: fix unlocked levels for completed levels
+            fixLevelConsistency();
+
             updateStats();
             renderUnits();
+        }
+
+        // Data consistency check: fix unlocked levels for completed levels
+        function fixLevelConsistency() {
+            const beforeLength = userData.unlockedLevels.length;
+
+            // Reuse unlockNextLevel logic for each completed level
+            userData.completedLevels.forEach(levelId => {
+                unlockNextLevel(levelId);
+            });
+
+            // Save data if any new levels were unlocked
+            if (userData.unlockedLevels.length > beforeLength) {
+                saveUserData();
+            }
         }
 
         // LocalStorage
